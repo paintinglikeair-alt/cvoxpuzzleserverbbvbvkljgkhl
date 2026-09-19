@@ -1,4 +1,4 @@
-const express = require('express');
+ const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
 
@@ -9,7 +9,7 @@ app.use(express.json());
 // مفتاح AssemblyAI الخاص بالوكيل الصوتي
 const AAI_KEY = "5ce8d938cb0c4497abebb6cb05732746"; 
 
-// 1. مسار جلب توكن "الوكيل الصوتي الشامل"
+// 1. مسار جلب توكن الوكيل الصوتي
 app.get('/api/token/agent', async (req, res) => {
     try {
         const response = await axios.get('https://agents.assemblyai.com/v1/token', {
@@ -43,5 +43,13 @@ app.post('/api/formulate', async (req, res) => {
     }
 });
 
-// السطر السحري ده اللي بيخلي Vercel يشغل السيرفر بنجاح
+// السطر الأساسي عشان Vercel يشغل السيرفر
 module.exports = app;
+
+// لو بتشغليه محلياً على جهازك
+if (process.env.NODE_ENV !== 'production') {
+    const PORT = 3000;
+    app.listen(PORT, () => {
+        console.log(`✅ Local Server running on http://localhost:${PORT}`);
+    });
+}
