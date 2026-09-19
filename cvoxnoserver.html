@@ -1,0 +1,1101 @@
+ <!DOCTYPE html>
+<html lang="en" dir="ltr">
+    
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CVoxPuzzle - AI Voice CV Builder</title>
+  
+  <!-- FontAwesome Icons -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <!-- Google Fonts for Modern Look -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+  
+  <style>
+      /* --- HACKATHON WINNING THEME (Dark, Glossy, Neon) --- */
+      :root { 
+          --bg-dark: #0a0f1c; 
+          --panel-bg: rgba(18, 25, 43, 0.65);
+          --glass-border: rgba(255, 255, 255, 0.08);
+          --text-main: #e2e8f0;
+          --text-muted: #94a3b8;
+          --primary: #3b82f6; /* Neon Blue */
+          --primary-glow: 0 0 20px rgba(59, 130, 246, 0.4);
+          --ai-color: #a855f7; /* Neon Purple */
+          --ai-glow: 0 0 25px rgba(168, 85, 247, 0.6);
+          --mic-color: #ef4444; /* Neon Red */
+          --success: #10b981;
+          --radius-lg: 20px;
+          --radius-md: 12px;
+          --radius-btn: 50px;
+      }
+      
+      *, *::before, *::after { box-sizing: border-box; }
+      
+      body { 
+          font-family: 'Outfit', 'Segoe UI', sans-serif; 
+          background: var(--bg-dark); 
+          background-image: 
+              radial-gradient(circle at 15% 50%, rgba(168, 85, 247, 0.08), transparent 25%),
+              radial-gradient(circle at 85% 30%, rgba(59, 130, 246, 0.08), transparent 25%);
+          margin: 0; display: flex; height: 100vh; overflow: hidden; color: var(--text-main);
+      }
+      
+      ::-webkit-scrollbar { width: 8px; height: 8px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+      ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.4); }
+
+      .controls-panel { 
+          width: 35%; background: var(--panel-bg); padding: 25px; overflow-y: auto; 
+          border-right: 1px solid var(--glass-border); backdrop-filter: blur(15px);
+          box-shadow: 10px 0 30px rgba(0,0,0,0.3); z-index: 10;
+      }
+      .preview-panel { 
+          width: 65%; padding: 30px; overflow-y: auto; display: flex; flex-direction: column; 
+          align-items: center; background: #050810; position: relative;
+      }
+      
+      .brand-logo {
+          font-size: 28px; font-weight: 800; color: #fff; margin-bottom: 25px;
+          display: flex; align-items: center; gap: 10px;
+          text-shadow: var(--ai-glow);
+      }
+      .brand-logo i { color: var(--ai-color); }
+
+      .global-agent-panel { 
+          background: rgba(168, 85, 247, 0.05); padding: 20px; border-radius: var(--radius-lg); 
+          margin-bottom: 25px; border: 1px solid rgba(168, 85, 247, 0.3); text-align: center; 
+          box-shadow: inset 0 0 20px rgba(168, 85, 247, 0.05); transition: all 0.3s ease;
+      }
+      .global-agent-panel:hover { border-color: var(--ai-color); box-shadow: var(--ai-glow); }
+      
+      .btn-voice-agent { 
+          background: linear-gradient(135deg, var(--ai-color), #7e22ce); color: white; 
+          border: none; padding: 12px 25px; font-size: 16px; font-weight: 600; 
+          border-radius: var(--radius-btn); cursor: pointer; width: 100%; transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
+          display: flex; justify-content: center; align-items: center; gap: 10px; box-shadow: var(--ai-glow);
+      }
+      .btn-voice-agent:hover { transform: translateY(-2px); box-shadow: 0 0 30px rgba(168, 85, 247, 0.8); }
+      .btn-voice-agent.recording { background: linear-gradient(135deg, var(--mic-color), #b91c1c); animation: pulseRecord 1.5s infinite; box-shadow: 0 0 20px rgba(239, 68, 68, 0.6); }
+      
+      @keyframes pulseRecord { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
+
+      .btn-mic { 
+          background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); 
+          border-radius: 50%; cursor: pointer; width: 36px; height: 36px; transition: 0.3s; 
+          color: var(--text-main); display: flex; align-items: center; justify-content: center;
+      }
+      .btn-mic:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.3); }
+      .dictate-btn.active { background: var(--mic-color) !important; color: white !important; box-shadow: 0 0 15px var(--mic-color); border-color: var(--mic-color); }
+      .smart-btn.active { background: var(--ai-color) !important; color: white !important; box-shadow: var(--ai-glow); border-color: var(--ai-color); }
+      
+      .ai-suggestion-box { 
+          background: rgba(168, 85, 247, 0.1); border: 1px solid var(--ai-color); 
+          border-radius: var(--radius-md); padding: 12px; margin-top: 8px; font-size: 14px; 
+          display: none; align-items: flex-start; justify-content: space-between; gap: 10px;
+          backdrop-filter: blur(5px);
+      }
+      .ai-suggestion-text { color: #e9d5ff; flex-grow: 1; font-weight: 500; line-height: 1.4; }
+      .btn-apply-sugg { background: var(--ai-color); color: white; border: none; padding: 6px 12px; border-radius: var(--radius-btn); cursor: pointer; font-size: 12px; font-weight: 600; box-shadow: 0 0 10px rgba(168,85,247,0.4);}
+      .btn-apply-sugg:hover { background: #9333ea; }
+
+      .profile-manager { 
+          background: rgba(59, 130, 246, 0.05); padding: 20px; border-radius: var(--radius-lg); 
+          margin-bottom: 25px; border: 1px solid rgba(59, 130, 246, 0.2); 
+      }
+      .profile-manager select, .profile-manager input { 
+          width: 100%; padding: 10px 15px; margin-bottom: 12px; 
+          background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); 
+          border-radius: var(--radius-md); color: white; font-family: inherit; outline: none; transition: 0.3s;
+      }
+      .profile-manager select:focus, .profile-manager input:focus { border-color: var(--primary); box-shadow: 0 0 10px rgba(59,130,246,0.2); }
+      
+      .flex-btns { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+      .flex-btns button { 
+          flex: 1; padding: 10px 15px; cursor: pointer; color: white; border: none; 
+          border-radius: var(--radius-btn); font-weight: 600; font-size: 13px; transition: 0.3s;
+      }
+      .flex-btns button:hover { transform: translateY(-2px); filter: brightness(1.1); }
+      .btn-blue { background: linear-gradient(135deg, #2563eb, #1d4ed8); box-shadow: 0 4px 15px rgba(37,99,235,0.3); } 
+      .btn-green { background: linear-gradient(135deg, #059669, #047857); box-shadow: 0 4px 15px rgba(5,150,105,0.3); } 
+      .btn-orange { background: linear-gradient(135deg, #ea580c, #c2410c); box-shadow: 0 4px 15px rgba(234,88,12,0.3); }
+      .btn-purple { background: linear-gradient(135deg, #7c3aed, #6d28d9); box-shadow: 0 4px 15px rgba(124,58,237,0.3); } 
+      .btn-red { background: linear-gradient(135deg, #e11d48, #be123c); box-shadow: 0 4px 15px rgba(225,29,72,0.3); } 
+      
+      .group { 
+          background: rgba(255, 255, 255, 0.02); border: 1px solid var(--glass-border); 
+          border-radius: var(--radius-lg); margin-bottom: 20px; overflow: hidden; 
+          backdrop-filter: blur(10px); transition: 0.3s;
+      }
+      .group:hover { border-color: rgba(255,255,255,0.15); }
+      .group-header { 
+          background: rgba(0,0,0,0.2); padding: 12px 20px; font-weight: 600; 
+          display: flex; justify-content: space-between; align-items: center; 
+          border-bottom: 1px solid var(--glass-border); font-size: 14px; letter-spacing: 0.5px;
+      }
+      .group-body { padding: 20px; }
+      
+      .dyn-item { 
+          display: flex; gap: 12px; align-items: flex-start; background: rgba(0,0,0,0.15); 
+          padding: 15px; border: 1px dashed rgba(255,255,255,0.1); margin-bottom: 15px; 
+          border-radius: var(--radius-md); transition: 0.3s; position: relative;
+      }
+      .dyn-item:hover { border-color: var(--primary); background: rgba(59,130,246,0.05); }
+      .dyn-inputs { flex-grow: 1; display: flex; flex-direction: column; gap: 10px; }
+      
+      .dyn-inputs input[type="text"], .dyn-inputs textarea { 
+          padding: 10px 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); 
+          border-radius: 8px; color: white; font-family: inherit; width: 100%; outline: none; transition: 0.2s;
+      }
+      .dyn-inputs input[type="text"]:focus, .dyn-inputs textarea:focus { border-color: var(--primary); }
+      
+      .btn-add { background: transparent; color: var(--primary); border: 1px solid var(--primary); padding: 4px 12px; cursor: pointer; border-radius: var(--radius-btn); font-size: 12px; font-weight: 600; transition: 0.3s;}
+      .btn-add:hover { background: var(--primary); color: white; box-shadow: var(--primary-glow); }
+      .btn-del { background: transparent; color: var(--text-muted); border: none; padding: 5px; cursor: pointer; border-radius: 50%; width: 28px; height: 28px; display: flex; justify-content: center; align-items: center; transition: 0.2s;}
+      .btn-del:hover { background: rgba(239, 68, 68, 0.1); color: var(--mic-color); }
+      
+      .toolbars-container { width: 210mm; margin-bottom: 25px; display: flex; flex-direction: column; gap: 15px; z-index: 5;}
+      .toolbar { 
+          background: var(--panel-bg); padding: 12px 20px; border-radius: var(--radius-lg); 
+          display: flex; gap: 12px; flex-wrap: wrap; align-items: center; 
+          border: 1px solid var(--glass-border); backdrop-filter: blur(10px);
+      }
+      .toolbar button, .toolbar select, .toolbar input[type="color"] { 
+          background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: white;
+          padding: 6px 12px; cursor: pointer; border-radius: 8px; font-size: 13px; font-family: inherit; transition: 0.2s;
+      }
+      .toolbar button:hover, .toolbar select:hover { background: rgba(255,255,255,0.1); }
+      .toolbar select option { background: var(--bg-dark); color: white; }
+      
+      .cv-wrapper { padding: 20px; display: flex; justify-content: center; min-width: max-content; }
+      .cv-paper { 
+          background: #ffffff; width: 210mm; min-height: 297mm; padding: 20mm; 
+          box-shadow: 0 0 50px rgba(59, 130, 246, 0.15); color: #1e293b; direction: ltr; 
+          transition: all 0.3s; position: relative; box-sizing: border-box; border-radius: 4px;
+      }
+      
+      .cv-paper.has-border { border: 2px solid #334155; padding: 18mm; outline: 4px double #334155; outline-offset: -10px; }
+      .cv-paper.wide-margins { padding: 30mm; }
+      .cv-paper.show-dividers .sec-title { border-bottom: 2px solid #334155; padding-bottom: 5px; }
+      .cv-paper.show-dividers .drag-section { border-bottom: 1px dashed #cbd5e1; margin-bottom: 20px; padding-bottom: 10px; }
+      
+      .cv-header-area { display: flex; gap: 25px; align-items: center; border-bottom: 2px solid #334155; padding-bottom: 20px; margin-bottom: 25px; }
+      .cv-profile-img { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid #f1f5f9; box-shadow: 0 4px 10px rgba(0,0,0,0.1);}
+      .cv-name { font-size: 36px; font-weight: 800; margin: 0 0 8px 0; color: #0f172a; letter-spacing: -0.5px;}
+      .cv-contact-list { display: flex; flex-wrap: wrap; gap: 20px; font-size: 14px; margin-top: 12px; color: #475569;}
+      .cv-contact-list > span { display: flex; align-items: center; gap: 5px; }
+      
+      .sec-title { font-size: 22px; color: #0f172a; border-bottom: 1px solid #e2e8f0; margin-bottom: 15px; padding-bottom: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;}
+      
+      .drag-section { padding: 10px 0; margin-bottom: 15px; border: 2px solid transparent; cursor: grab; transition: 0.2s; border-radius: 8px;}
+      .drag-section:hover { border-color: rgba(59,130,246,0.3); background: rgba(59,130,246,0.02); }
+      .drag-item { padding: 8px 12px; margin-bottom: 8px; border: 1px dashed transparent; cursor: grab; border-radius: 6px; transition: 0.2s;}
+      .drag-item:hover { border-color: #cbd5e1; background: #f8fafc; }
+      .dragging { opacity: 0.5; background: #eff6ff !important; border-color: #3b82f6 !important; }
+      
+      .hidden { display: none !important; }
+      .portfolio-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; }
+
+      .toast-container { position: fixed; bottom: 30px; right: 30px; z-index: 9999; display: flex; flex-direction: column; gap: 15px; }
+      .toast { 
+          background: rgba(15, 23, 42, 0.9); color: white; padding: 15px 25px; border-radius: var(--radius-md); 
+          box-shadow: 0 10px 30px rgba(0,0,0,0.5); font-size: 14px; font-weight: 500; border-left: 4px solid var(--primary);
+          opacity: 0; transform: translateY(20px); transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); backdrop-filter: blur(10px);
+      }
+      .toast.show { opacity: 1; transform: translateY(0); }
+
+      .loader-overlay { 
+          position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+          background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(5px); z-index: 100; 
+          display: none; justify-content: center; align-items: center; flex-direction: column; color: white; font-weight: 600;
+      }
+      .spinner { border: 4px solid rgba(255,255,255,0.1); border-top: 4px solid var(--primary); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 15px;}
+      @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+      @media print {
+          @page { size: A4; margin: 0; }
+          body, html { background: white !important; }
+          .controls-panel, .toolbars-container, .toast-container, .loader-overlay { display: none !important; }
+          .preview-panel { width: 100%; padding: 0; background: transparent; }
+          .cv-paper { box-shadow: none; padding: 20mm; border: none; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .drag-section { page-break-inside: avoid; }
+      }
+  </style>
+</head>
+<body>
+
+  <div class="toast-container" id="toast-container"></div>
+
+  <div class="controls-panel">
+      
+      <div class="brand-logo">
+          <i class="fas fa-puzzle-piece"></i> CVoxPuzzle
+      </div>
+
+      <!-- CVoxPuzzle Agent Panel -->
+      <div class="global-agent-panel">
+          <h3 style="margin-top:0; color: #fff; font-weight: 600;"><i class="fas fa-robot" style="color: var(--ai-color); margin-right: 8px;"></i> CVox Agent</h3>
+          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Chat with me. I'll conduct an interview to extract your data and build your CV dynamically.</p>
+          <button id="global-agent-btn" class="btn-voice-agent" onclick="toggleGlobalAgent()">
+              <i class="fas fa-microphone-alt"></i> <span id="global-agent-txt">Start Full Interview</span>
+          </button>
+          <div id="agent-status" style="font-size: 12px; margin-top: 12px; color: var(--ai-color); font-weight: 600; display: none;">Connecting...</div>
+      </div>
+
+      <div class="profile-manager">
+          <h3 style="margin-top:0; font-size: 16px;"><i class="fas fa-users" style="margin-right: 8px; color: var(--primary);"></i> Profiles Management</h3>
+          <select id="profile-select" onchange="switchProfile(this.value)">
+              <option value="default">Default Profile (John Doe)</option>
+          </select>
+          <input type="text" id="new-profile-name" placeholder="New profile name...">
+          <div class="flex-btns">
+              <button class="btn-blue" onclick="addProfile()"><i class="fas fa-plus"></i> Add Profile</button>
+          </div>
+          <hr style="border: 0; border-top: 1px solid var(--glass-border); margin: 20px 0;">
+          <div class="flex-btns">
+              <button class="btn-green" onclick="exportProfileJSON()"><i class="fas fa-file-export"></i> Export JSON</button>
+              <button class="btn-orange" onclick="document.getElementById('import-file').click()"><i class="fas fa-file-import"></i> Import</button>
+              <input type="file" id="import-file" class="hidden" accept=".json" onchange="importProfileJSON(event)">
+          </div>
+      </div>
+
+      <div id="data-inputs-area">
+          <div class="group"><div class="group-header"><span><i class="fas fa-id-badge" style="margin-right:8px;"></i> Photo & Name</span></div><div class="group-body">
+              <div class="dyn-item"><input type="checkbox" checked onchange="toggleVis('cv-img-box', this)">
+                  <div class="dyn-inputs"><label style="font-size: 12px; color: var(--text-muted);">Photo:</label><input type="file" accept="image/*" onchange="loadMainImg(event)" style="color: transparent;"></div>
+              </div>
+              <div class="dyn-item" id="name-field-container"></div>
+          </div></div>
+
+          <div class="group"><div class="group-header"><label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" checked onchange="toggleVis('cv-titles-list', this)"> Job Titles</label> <button class="btn-add" onclick="addEl('titles')"><i class="fas fa-plus"></i> Add</button></div><div class="group-body" id="ctrl-titles"></div></div>
+          <div class="group"><div class="group-header"><label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" checked onchange="toggleVis('cv-contact-list', this)"> Contact Info</label> <button class="btn-add" onclick="addEl('contact')"><i class="fas fa-plus"></i> Add</button></div><div class="group-body" id="ctrl-contact"></div></div>
+          <div class="group"><div class="group-header"><label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" checked onchange="toggleVis('sec-summary', this)"> Profile Summary</label> <button class="btn-add" onclick="addEl('summary')"><i class="fas fa-plus"></i> Add</button></div><div class="group-body" id="ctrl-summary"></div></div>
+          <div class="group"><div class="group-header"><label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" checked onchange="toggleVis('sec-exp', this)"> Experience</label> <button class="btn-add" onclick="addEl('exp')"><i class="fas fa-plus"></i> Add</button></div><div class="group-body" id="ctrl-exp"></div></div>
+          <div class="group"><div class="group-header"><label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" checked onchange="toggleVis('sec-edu', this)"> Education</label> <button class="btn-add" onclick="addEl('edu')"><i class="fas fa-plus"></i> Add</button></div><div class="group-body" id="ctrl-edu"></div></div>
+          <div class="group"><div class="group-header"><label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" checked onchange="toggleVis('sec-courses', this)"> Certifications</label> <button class="btn-add" onclick="addEl('courses')"><i class="fas fa-plus"></i> Add</button></div><div class="group-body" id="ctrl-courses"></div></div>
+          <div class="group"><div class="group-header"><label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" checked onchange="toggleVis('sec-skills', this)"> Key Skills</label> <button class="btn-add" onclick="addEl('skills')"><i class="fas fa-plus"></i> Add</button></div><div class="group-body" id="ctrl-skills"></div></div>
+          <div class="group"><div class="group-header"><label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" checked onchange="toggleVis('sec-portfolio', this)"> Portfolio</label> <button class="btn-add" onclick="addEl('portfolio')"><i class="fas fa-plus"></i> Add</button></div><div class="group-body" id="ctrl-portfolio"></div></div>
+      </div>
+  </div>
+
+  <div class="preview-panel">
+      <div class="loader-overlay" id="trans-loader">
+          <div class="spinner"></div>
+          <div>Processing Content...</div>
+      </div>
+
+      <div class="toolbars-container">
+          <div class="flex-btns" style="margin:0;">
+              <button class="btn-purple" onclick="translateAll()" id="trans-btn"><i class="fas fa-language"></i> Translate (EN / عربي)</button>
+              <button class="btn-blue" onclick="exportWord()"><i class="fas fa-file-word"></i> Export Word (.doc)</button>
+              <button class="btn-red" onclick="window.print()"><i class="fas fa-file-pdf"></i> Print / Save PDF</button>
+          </div>
+          
+          <div class="toolbar">
+              <span style="font-size:12px; font-weight:bold; color: var(--text-muted);"><i class="fas fa-font"></i> Formatting:</span>
+              <select onchange="formatText('fontName', this.value)">
+                  <option value="Arial">Arial</option>
+                  <option value="Tahoma">Tahoma</option>
+                  <option value="Times New Roman">Times New Roman</option>
+                  <option value="Courier New">Courier</option>
+              </select>
+              <select onchange="formatText('fontSize', this.value)">
+                  <option value="3">Normal</option><option value="4">Medium</option><option value="5">Large</option><option value="6">Huge</option>
+              </select>
+              <button onclick="formatText('bold')" title="Bold"><i class="fas fa-bold"></i></button>
+              <button onclick="formatText('italic')" title="Italic"><i class="fas fa-italic"></i></button>
+              <button onclick="formatText('underline')" title="Underline"><i class="fas fa-underline"></i></button>
+              <input type="color" onchange="formatText('foreColor', this.value)" title="Text Color" style="padding: 0; height: 32px; width: 32px; border:none; border-radius: 4px;">
+              <button onclick="formatText('justifyLeft')"><i class="fas fa-align-left"></i></button>
+              <button onclick="formatText('justifyCenter')"><i class="fas fa-align-center"></i></button>
+              <button onclick="formatText('justifyRight')"><i class="fas fa-align-right"></i></button>
+          </div>
+
+          <div class="toolbar">
+              <span style="font-size:12px; font-weight:bold; color: var(--text-muted);"><i class="fas fa-border-all"></i> Layout:</span>
+              <button onclick="toggleLayout('has-border')">Page Border</button>
+              <button onclick="toggleLayout('wide-margins')">Wide Margins</button>
+              <button onclick="toggleLayout('show-dividers')">Section Dividers</button>
+          </div>
+      </div>
+
+      <div class="cv-wrapper">
+          <div class="cv-paper" id="cv-paper" contenteditable="true">
+              <div class="cv-header-area" id="cv-header-sec">
+                  <div id="cv-img-box"><img id="cv-img" class="cv-profile-img" src="https://via.placeholder.com/150/0f172a/3b82f6?text=Photo" alt="Profile"></div>
+                  <div style="flex-grow: 1;">
+                      <div id="cv-name">John Doe</div>
+                      <div id="cv-titles-list" class="drag-container"></div>
+                      <div id="cv-contact-list" class="cv-contact-list drag-container" style="flex-direction: row;"></div>
+                  </div>
+              </div>
+
+              <div id="cv-sections-container" class="drag-container">
+                  <div class="drag-section" id="sec-summary"><div class="sec-title lang-txt"><i class="fas fa-user-circle" style="font-size:16px; color:#3b82f6; margin-right:8px;"></i>Profile Summary</div><div id="cv-summary-list" class="drag-container"></div></div>
+                  <div class="drag-section" id="sec-exp"><div class="sec-title lang-txt"><i class="fas fa-briefcase" style="font-size:16px; color:#3b82f6; margin-right:8px;"></i>Professional Experience</div><div id="cv-exp-list" class="drag-container"></div></div>
+                  <div class="drag-section" id="sec-edu"><div class="sec-title lang-txt"><i class="fas fa-graduation-cap" style="font-size:16px; color:#3b82f6; margin-right:8px;"></i>Education</div><div id="cv-edu-list" class="drag-container"></div></div>
+                  <div class="drag-section" id="sec-courses"><div class="sec-title lang-txt"><i class="fas fa-certificate" style="font-size:16px; color:#3b82f6; margin-right:8px;"></i>Courses & Certifications</div><div id="cv-courses-list" class="drag-container"></div></div>
+                  <div class="drag-section" id="sec-skills"><div class="sec-title lang-txt"><i class="fas fa-cogs" style="font-size:16px; color:#3b82f6; margin-right:8px;"></i>Key Skills</div><div id="cv-skills-list" class="drag-container"></div></div>
+                  <div class="drag-section" id="sec-portfolio"><div class="sec-title lang-txt"><i class="fas fa-folder-open" style="font-size:16px; color:#3b82f6; margin-right:8px;"></i>Portfolio</div><div id="cv-portfolio-list" class="drag-container portfolio-grid"></div></div>
+              </div>
+          </div>
+      </div>
+  </div>
+
+  <script>
+      // ==========================================
+      // VERCEL SERVER URL CONNECTED HERE
+      // ==========================================
+      const SERVER_URL = "https://cvoxpuzzleserverbbvbvkljgkhl.vercel.app"; 
+      
+      let counter = 0;
+      let profilesData = {};
+      let activeProfile = 'default';
+      let blankInputsHTML = '';
+      let blankPaperHTML = '';
+
+      function showToast(message) {
+          const container = document.getElementById('toast-container');
+          const toast = document.createElement('div');
+          toast.className = 'toast'; toast.innerHTML = `<i class="fas fa-info-circle" style="color:var(--primary); margin-right:8px;"></i> ${message}`;
+          container.appendChild(toast);
+          setTimeout(() => toast.classList.add('show'), 10);
+          setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 400); }, 3000);
+      }
+
+      function toggleVis(id, cb) { const el = document.getElementById(id); if(el) cb.checked ? el.classList.remove('hidden') : el.classList.add('hidden'); }
+      function updateTxt(id, val) { const el = document.getElementById(id); if(el) el.innerText = val; }
+      function loadMainImg(e) { if(e.target.files[0]) { const r = new FileReader(); r.onload = (ev) => document.getElementById('cv-img').src = ev.target.result; r.readAsDataURL(e.target.files[0]); } }
+      function loadPortImg(e, imgId) { if(e.target.files[0]) { const r = new FileReader(); r.onload = (ev) => document.getElementById(imgId).src = ev.target.result; r.readAsDataURL(e.target.files[0]); } }
+      function formatText(cmd, val = null) { document.execCommand(cmd, false, val); document.getElementById('cv-paper').focus(); }
+      function toggleLayout(className) { document.getElementById('cv-paper').classList.toggle(className); }
+
+      function wrapWithVoice(inputId, baseHtml) {
+          return `
+          <div>
+              <div style="display:flex; gap:8px; align-items:center; width:100%;">
+                  <div style="flex-grow:1; display:flex; flex-direction:column; gap:5px;">${baseHtml}</div>
+                  <div style="display:flex; gap:5px;">
+                      <button id="btn-dictate-${inputId}" class="btn-mic dictate-btn" onclick="startFieldVoice('${inputId}', 'dictate')" title="Live Dictation (English First)"><i class="fas fa-microphone"></i></button>
+                      <button id="btn-smart-${inputId}" class="btn-mic smart-btn" onclick="startFieldVoice('${inputId}', 'smart')" title="Magic Wand (AI Draft)"><i class="fas fa-magic"></i></button>
+                  </div>
+              </div>
+              <div id="sugg-box-${inputId}" class="ai-suggestion-box">
+                  <span id="sugg-text-${inputId}" class="ai-suggestion-text"></span>
+                  <button class="btn-apply-sugg" onclick="applySuggestion('${inputId}')">Apply</button>
+              </div>
+          </div>`;
+      }
+
+      function addEl(type) {
+          counter++;
+          const cId = `ctrl-${counter}`; const vId = `view-${counter}`;
+          const ctrlDiv = document.createElement('div'); ctrlDiv.className = 'dyn-item'; ctrlDiv.id = cId;
+          const viewDiv = document.createElement('div'); viewDiv.className = 'drag-item'; viewDiv.id = vId; viewDiv.setAttribute('draggable', 'true');
+          
+          viewDiv.addEventListener('dragstart', handleDragStart); viewDiv.addEventListener('dragend', handleDragEnd);
+
+          let ctrlHTML = `<input type="checkbox" checked title="Show/Hide" onchange="toggleVis('${vId}', this)" style="margin-top:12px; cursor:pointer;"><div class="dyn-inputs">`;
+          
+          if(type === 'titles') {
+              const inpId = `inp-title-${counter}`;
+              ctrlHTML += wrapWithVoice(inpId, `<input type="text" id="${inpId}" class="translatable-input" placeholder="Job Title" oninput="updateTxt('${vId}-txt', this.value)">`);
+              viewDiv.innerHTML = `<div id="${vId}-txt" style="font-size:18px; color:#475569; margin-bottom:5px;">New Job Title</div>`;
+              document.getElementById('ctrl-titles').appendChild(ctrlDiv); document.getElementById('cv-titles-list').appendChild(viewDiv);
+          }
+          else if(type === 'contact') {
+              const inpLbl = `inp-contact-lbl-${counter}`; const inpVal = `inp-contact-val-${counter}`;
+              let inputs = `<input type="text" id="${inpLbl}" placeholder="Type (Phone, Email...)" oninput="updateTxt('${vId}-lbl', this.value + ': ')">
+                            <input type="text" id="${inpVal}" class="translatable-input" placeholder="Value" oninput="updateTxt('${vId}-val', this.value)">`;
+              ctrlHTML += wrapWithVoice(inpVal, inputs);
+              viewDiv.innerHTML = `<span style="display:inline-flex; align-items:center; margin-right:15px; margin-left:0;"><strong id="${vId}-lbl" class="lang-txt" style="margin-right:5px;">Type: </strong><span id="${vId}-val">Value</span></span>`;
+              viewDiv.style.display = "inline-block";
+              document.getElementById('ctrl-contact').appendChild(ctrlDiv); document.getElementById('cv-contact-list').appendChild(viewDiv);
+          }
+          else if(type === 'summary') {
+              const inpId = `inp-summary-${counter}`;
+              ctrlHTML += wrapWithVoice(inpId, `<textarea id="${inpId}" rows="3" class="translatable-input" placeholder="Professional Summary..." oninput="updateTxt('${vId}-txt', this.value)"></textarea>`);
+              viewDiv.innerHTML = `<p id="${vId}-txt" style="margin:0 0 10px 0; line-height:1.6;"></p>`;
+              document.getElementById('ctrl-summary').appendChild(ctrlDiv); document.getElementById('cv-summary-list').appendChild(viewDiv);
+          }
+          else if(type === 'exp') {
+              const inpT = `inp-exp-t-${counter}`; const inpC = `inp-exp-c-${counter}`; const inpD = `inp-exp-d-${counter}`;
+              let inputs = `<input type="text" id="${inpT}" class="translatable-input" placeholder="Job Title" oninput="updateTxt('${vId}-t', this.value)">
+                            <input type="text" id="${inpC}" class="translatable-input" placeholder="Company/Organization" oninput="updateTxt('${vId}-c', this.value)">
+                            <input type="text" id="${inpD}" class="translatable-input" placeholder="Date / Duration" oninput="updateTxt('${vId}-d', this.value)">`;
+              ctrlHTML += wrapWithVoice(inpT, inputs);
+              viewDiv.innerHTML = `<div style="margin-bottom:15px;"><div style="display:flex; justify-content:space-between;"><strong id="${vId}-t" style="font-size:16px;">Job Title</strong><span id="${vId}-d" style="color:#64748b; font-size:14px;">Date</span></div><div id="${vId}-c" style="color:#3b82f6; font-weight:700;">Company</div></div>`;
+              document.getElementById('ctrl-exp').appendChild(ctrlDiv); document.getElementById('cv-exp-list').appendChild(viewDiv);
+          }
+          else if(type === 'edu') {
+              const inpDeg = `inp-edu-deg-${counter}`; const inpUni = `inp-edu-uni-${counter}`; const inpYr = `inp-edu-yr-${counter}`;
+              let inputs = `<input type="text" id="${inpDeg}" class="translatable-input" placeholder="Degree / Certificate" oninput="updateTxt('${vId}-deg', this.value)">
+                            <input type="text" id="${inpUni}" class="translatable-input" placeholder="University / School" oninput="updateTxt('${vId}-uni', this.value)">
+                            <input type="text" id="${inpYr}" class="translatable-input" placeholder="Year" oninput="updateTxt('${vId}-yr', this.value)">`;
+              ctrlHTML += wrapWithVoice(inpDeg, inputs);
+              viewDiv.innerHTML = `<div style="margin-bottom:10px;"><strong id="${vId}-deg">Degree</strong> - <span id="${vId}-uni">University</span> <span id="${vId}-yr" style="color:#64748b; font-size:14px;">(Year)</span></div>`;
+              document.getElementById('ctrl-edu').appendChild(ctrlDiv); document.getElementById('cv-edu-list').appendChild(viewDiv);
+          }
+          else if(type === 'courses') {
+              const inpN = `inp-crs-n-${counter}`; const inpO = `inp-crs-o-${counter}`; const inpD = `inp-crs-d-${counter}`;
+              let inputs = `<input type="text" id="${inpN}" class="translatable-input" placeholder="Course Name" oninput="updateTxt('${vId}-cname', this.value)">
+                            <input type="text" id="${inpO}" class="translatable-input" placeholder="Issuer" oninput="updateTxt('${vId}-corg', this.value)">
+                            <input type="text" id="${inpD}" class="translatable-input" placeholder="Date" oninput="updateTxt('${vId}-cyr', this.value)">`;
+              ctrlHTML += wrapWithVoice(inpN, inputs);
+              viewDiv.innerHTML = `<div style="margin-bottom:10px;"><strong id="${vId}-cname" class="lang-txt">Course Name</strong> - <span id="${vId}-corg">Issuer</span> <span id="${vId}-cyr" style="color:#64748b; font-size:14px;">(Date)</span></div>`;
+              document.getElementById('ctrl-courses').appendChild(ctrlDiv); document.getElementById('cv-courses-list').appendChild(viewDiv);
+          }
+          else if(type === 'skills') {
+              const inpId = `inp-skills-${counter}`;
+              ctrlHTML += wrapWithVoice(inpId, `<input type="text" id="${inpId}" class="translatable-input" placeholder="Skill" oninput="updateTxt('${vId}-sk', this.value)">`);
+              viewDiv.innerHTML = `<li id="${vId}-sk" style="margin-bottom:4px;">New Skill</li>`;
+              document.getElementById('ctrl-skills').appendChild(ctrlDiv); document.getElementById('cv-skills-list').appendChild(viewDiv);
+          }
+          else if(type === 'portfolio') {
+              const inpD = `inp-port-desc-${counter}`;
+              let inputs = `<input type="file" accept="image/*" onchange="loadPortImg(event, '${vId}-img')" style="color:transparent;">
+                            <input type="text" id="${inpD}" class="translatable-input" placeholder="Image Description" oninput="updateTxt('${vId}-desc', this.value)">`;
+              ctrlHTML += wrapWithVoice(inpD, inputs);
+              viewDiv.innerHTML = `<div style="text-align:center; padding:8px; border:1px solid #e2e8f0; border-radius:12px; background:#f8fafc;">
+                                      <img id="${vId}-img" src="https://via.placeholder.com/150/cbd5e1/ffffff?text=Image" style="max-width:100%; height:120px; object-fit:cover; border-radius:8px; display:block; margin:0 auto;">
+                                      <div id="${vId}-desc" style="font-size:14px; color:#334155; margin-top:10px; font-weight:600;">Description</div>
+                                   </div>`;
+              document.getElementById('ctrl-portfolio').appendChild(ctrlDiv); document.getElementById('cv-portfolio-list').appendChild(viewDiv);
+          }
+
+          ctrlHTML += `</div><button class="btn-del" onclick="document.getElementById('${cId}').remove(); document.getElementById('${vId}').remove(); showToast('Item deleted');"><i class="fas fa-times"></i></button>`;
+          ctrlDiv.innerHTML = ctrlHTML;
+      }
+
+      let draggedObj = null;
+      function handleDragStart(e) { draggedObj = this; setTimeout(() => this.classList.add('dragging'), 0); e.stopPropagation(); }
+      function handleDragEnd(e) { this.classList.remove('dragging'); draggedObj = null; e.stopPropagation(); }
+      
+      function handleDragOver(e) {
+          e.preventDefault(); e.stopPropagation();
+          if (draggedObj && draggedObj.classList.contains('drag-section') && this.id !== 'cv-sections-container') return;
+          if (draggedObj && draggedObj.classList.contains('drag-item') && this.id === 'cv-sections-container') return;
+          
+          const afterEl = [...this.querySelectorAll(':scope > [draggable="true"]:not(.dragging)')].reduce((closest, child) => {
+              const box = child.getBoundingClientRect(); const offset = e.clientY - box.top - box.height / 2;
+              return (offset < 0 && offset > closest.offset) ? { offset: offset, element: child } : closest;
+          }, { offset: Number.NEGATIVE_INFINITY }).element;
+          
+          afterEl == null ? this.appendChild(draggedObj) : this.insertBefore(draggedObj, afterEl);
+      }
+
+      function attachDragEvents() {
+          document.querySelectorAll('.drag-section, .drag-item').forEach(el => { 
+              el.setAttribute('draggable', 'true'); 
+              el.removeEventListener('dragstart', handleDragStart);
+              el.removeEventListener('dragend', handleDragEnd);
+              el.addEventListener('dragstart', handleDragStart); 
+              el.addEventListener('dragend', handleDragEnd); 
+          });
+          document.querySelectorAll('.drag-container').forEach(container => {
+              container.removeEventListener('dragover', handleDragOver);
+              container.addEventListener('dragover', handleDragOver);
+          });
+      }
+
+      function syncDOM() {
+          document.querySelectorAll('#data-inputs-area input, #data-inputs-area textarea').forEach(el => {
+              if (el.type === 'checkbox' || el.type === 'radio') {
+                  if (el.checked) el.setAttribute('checked', 'checked');
+                  else el.removeAttribute('checked');
+              } else if (el.tagName === 'TEXTAREA') {
+                  el.innerHTML = el.value;
+              } else {
+                  el.setAttribute('value', el.value);
+              }
+          });
+      }
+
+      function saveCurrentProfileState() {
+          syncDOM();
+          profilesData[activeProfile] = {
+              inputs: document.getElementById('data-inputs-area').innerHTML,
+              paper: document.getElementById('cv-paper').innerHTML,
+              count: counter
+          };
+      }
+
+      function switchProfile(profileName) {
+          saveCurrentProfileState();
+          activeProfile = profileName;
+          if (profilesData[profileName]) {
+              document.getElementById('data-inputs-area').innerHTML = profilesData[profileName].inputs;
+              document.getElementById('cv-paper').innerHTML = profilesData[profileName].paper;
+              counter = profilesData[profileName].count;
+              attachDragEvents();
+              showToast(`Switched to profile: ${profileName}`);
+          }
+      }
+
+      function addProfile() {
+          const name = document.getElementById('new-profile-name').value;
+          if(!name) return showToast('Please enter a profile name first');
+          saveCurrentProfileState();
+          const select = document.getElementById('profile-select');
+          const opt = document.createElement('option'); opt.text = name; opt.value = name;
+          select.add(opt); select.value = name; document.getElementById('new-profile-name').value = '';
+          activeProfile = name;
+          document.getElementById('data-inputs-area').innerHTML = blankInputsHTML;
+          document.getElementById('cv-paper').innerHTML = blankPaperHTML;
+          counter = 0;
+          
+          initDefaultState(true);
+          showToast('Added and switched to: ' + name);
+      }
+
+      function exportProfileJSON() {
+          saveCurrentProfileState();
+          const dl = document.createElement('a');
+          dl.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(profilesData));
+          dl.download = "CVoxPuzzle_Profiles.json"; dl.click();
+          showToast('Profiles exported successfully');
+      }
+
+      function importProfileJSON(e) {
+          if(!e.target.files[0]) return;
+          const r = new FileReader();
+          r.onload = function(ev) {
+              const data = JSON.parse(ev.target.result);
+              profilesData = data;
+              const select = document.getElementById('profile-select');
+              select.innerHTML = '';
+              for(let key in profilesData) {
+                  const opt = document.createElement('option'); opt.text = key; opt.value = key;
+                  select.add(opt);
+              }
+              const firstProfile = Object.keys(profilesData)[0];
+              if(firstProfile) { select.value = firstProfile; switchProfile(firstProfile); }
+              showToast('Profiles imported successfully');
+          };
+          r.readAsText(e.target.files[0]);
+      }
+
+      async function exportWord() {
+          showToast('Preparing Word Document...');
+          const paperClone = document.getElementById('cv-paper').cloneNode(true);
+          const header = paperClone.querySelector('.cv-header-area');
+          const currentDir = document.getElementById('cv-paper').style.direction || 'ltr';
+          
+          if(header) {
+              header.style.display = 'block'; 
+              const imgBox = header.querySelector('#cv-img-box');
+              if(imgBox) { 
+                  imgBox.style.float = currentDir === 'rtl' ? 'right' : 'left'; 
+                  imgBox.style.marginRight = currentDir === 'ltr' ? '20px' : '0'; 
+                  imgBox.style.marginLeft = currentDir === 'rtl' ? '20px' : '0'; 
+                  imgBox.style.marginBottom = '10px'; 
+              }
+              const clearDiv = document.createElement('div'); clearDiv.style.clear = 'both'; header.appendChild(clearDiv);
+          }
+
+          const images = paperClone.querySelectorAll('img');
+          let imageParts = ''; let imgIndex = 0;
+          const boundary = "----=_NextPart_Boundary_" + Math.random().toString(36).substring(2);
+
+          for (let img of images) {
+              if(img.classList.contains('cv-profile-img')) {
+                  img.setAttribute('width', '120'); img.setAttribute('height', '120'); img.style.width = '120px'; img.style.height = '120px';
+              } else {
+                  img.setAttribute('width', '150'); img.setAttribute('height', '120'); img.style.width = '150px'; img.style.height = '120px'; img.style.display = 'block'; img.style.margin = '0 auto';
+              }
+
+              let src = img.src; let mimeType = 'image/jpeg'; let base64Data = ''; let isProcessed = false;
+              if (src.startsWith('data:image')) {
+                  const match = src.match(/^data:(image\/\w+);base64,(.*)$/);
+                  if (match) { mimeType = match[1]; base64Data = match[2]; isProcessed = true; }
+              } else {
+                  try {
+                      const res = await fetch(src); const blob = await res.blob();
+                      const base64 = await new Promise((resolve) => { const reader = new FileReader(); reader.onloadend = () => resolve(reader.result); reader.readAsDataURL(blob); });
+                      const match = base64.match(/^data:(image\/\w+);base64,(.*)$/);
+                      if (match) { mimeType = match[1]; base64Data = match[2]; isProcessed = true; }
+                  } catch(e) {}
+              }
+
+              if (isProcessed) {
+                  const extension = mimeType.split('/')[1] || 'jpeg';
+                  const imageName = `image_${imgIndex}.${extension}`;
+                  img.src = imageName; 
+                  imageParts += `\r\n--${boundary}\r\nContent-Location: ${imageName}\r\nContent-Type: ${mimeType}\r\nContent-Transfer-Encoding: base64\r\n\r\n${base64Data}\r\n`;
+                  imgIndex++;
+              }
+          }
+
+          paperClone.querySelectorAll('i.fas').forEach(icon => icon.remove());
+          const alignText = currentDir === 'rtl' ? 'right' : 'left';
+          const cssStyles = `
+          <style>
+              body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; direction: ${currentDir}; color: #1e293b; text-align: ${alignText}; }
+              .cv-header-area { border-bottom: 2pt solid #334155; padding-bottom: 15pt; margin-bottom: 20pt; }
+              .cv-name { font-size: 28pt; font-weight: bold; color: #0f172a; margin: 0 0 5pt 0; }
+              .cv-contact-list { display: block; font-size: 11pt; margin-top: 10pt; }
+              .cv-contact-list > span { display: inline-block; margin-${currentDir === 'rtl' ? 'left' : 'right'}: 15pt; }
+              .sec-title { font-size: 18pt; color: #0f172a; border-bottom: 1pt solid #e2e8f0; margin-bottom: 10pt; padding-bottom: 5pt; font-weight: bold; }
+              .portfolio-grid { text-align: center; }
+              .drag-section { margin-bottom: 15pt; }
+          </style>`;
+
+          const htmlContent = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>CV</title>" + cssStyles + "</head><body>" + paperClone.innerHTML + "</body></html>";
+          const utf8ToBase64 = (str) => window.btoa(unescape(encodeURIComponent(str)));
+          
+          let mhtml = `MIME-Version: 1.0\r\nContent-Type: multipart/related; boundary="${boundary}"\r\n\r\n--${boundary}\r\nContent-Location: document.html\r\nContent-Type: text/html; charset="utf-8"\r\nContent-Transfer-Encoding: base64\r\n\r\n${utf8ToBase64(htmlContent)}\r\n`;
+          if(imageParts) { mhtml += imageParts; } mhtml += `\r\n--${boundary}--\r\n`;
+
+          const blob = new Blob([mhtml], { type: 'application/msword' });
+          const url = URL.createObjectURL(blob);
+          const downloadLink = document.createElement("a");
+          document.body.appendChild(downloadLink); downloadLink.href = url; downloadLink.download = `${activeProfile}_CVoxPuzzle.doc`; downloadLink.click(); 
+          document.body.removeChild(downloadLink); URL.revokeObjectURL(url);
+          showToast('Word Document Exported! 📄');
+      }
+
+      let isArabic = false;
+      const staticDict = { 
+          "Profile Summary": "التعريف الشخصي", 
+          "Professional Experience": "الخبرات العملية", 
+          "Education": "التعليم والمؤهلات", 
+          "Key Skills": "المهارات الأساسية", 
+          "Portfolio": "معرض الأعمال", 
+          "Courses & Certifications": "الدورات والشهادات", 
+          "Type:": "النوع:", 
+          "Phone:": "تليفون:", 
+          "Email:": "إيميل:" 
+      };
+      const revStaticDict = Object.fromEntries(Object.entries(staticDict).map(([k, v]) => [v, k]));
+
+      async function translateAPI(text, sourceLang, targetLang) {
+          if(!text || text.trim() === '') return text;
+          try {
+              const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLang}&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`;
+              const res = await fetch(url); const data = await res.json();
+              return data[0].map(item => item[0]).join('');
+          } catch (e) { return text; }
+      }
+
+      async function translateAll() {
+          isArabic = !isArabic;
+          const paper = document.getElementById('cv-paper'); 
+          const btn = document.getElementById('trans-btn'); 
+          const loader = document.getElementById('trans-loader');
+          
+          paper.style.direction = isArabic ? 'rtl' : 'ltr'; 
+          paper.style.textAlign = isArabic ? 'right' : 'left';
+          
+          document.querySelectorAll('.cv-contact-list > span').forEach(s => {
+              s.style.marginLeft = isArabic ? '15px' : '0';
+              s.style.marginRight = isArabic ? '0' : '15px';
+          });
+
+          btn.innerHTML = isArabic ? '<i class="fas fa-language"></i> Translate (عربي / EN)' : '<i class="fas fa-language"></i> Translate (EN / عربي)';
+          const sl = isArabic ? 'en' : 'ar'; 
+          const tl = isArabic ? 'ar' : 'en';
+          
+          loader.style.display = 'flex';
+
+          try {
+              const secTitles = document.querySelectorAll('.cv-paper .sec-title');
+              secTitles.forEach(el => {
+                  let textOnly = "";
+                  el.childNodes.forEach(node => { if(node.nodeType === 3) textOnly += node.textContent; });
+                  textOnly = textOnly.trim();
+                  let iconHTML = el.querySelector('i') ? el.querySelector('i').outerHTML : '';
+                  if(isArabic && staticDict[textOnly]) el.innerHTML = `${iconHTML} ${staticDict[textOnly]}`; 
+                  else if(!isArabic && revStaticDict[textOnly]) el.innerHTML = `${iconHTML} ${revStaticDict[textOnly]}`;
+              });
+
+              document.querySelectorAll('.cv-paper strong.lang-txt').forEach(el => {
+                 let text = el.innerText.trim();
+                 if(isArabic && staticDict[text]) el.innerText = staticDict[text] + " "; 
+                 else if(!isArabic && revStaticDict[text]) el.innerText = revStaticDict[text] + " ";
+              });
+
+              const inputsToTranslate = document.querySelectorAll('.controls-panel .translatable-input');
+              for (let input of inputsToTranslate) {
+                  let originalText = input.value;
+                  if (originalText && originalText.trim() !== '') {
+                      let translatedText = await translateAPI(originalText, sl, tl);
+                      input.value = translatedText; input.dispatchEvent(new Event('input', { bubbles: true }));
+                  }
+              }
+              showToast(isArabic ? 'تمت الترجمة للعربية بنجاح!' : 'Translated to English!');
+        } catch(err) { showToast('Translation error occurred.'); } finally { loader.style.display = 'none'; }
+      }
+
+      let audioCtx, mediaStream, processor;
+      let activeWs = null;
+      let activeInputId = null;
+      let activeMode = null; 
+      let speechRecognition = null; 
+
+      function stopAudio() {
+          if(activeWs) { activeWs.send(JSON.stringify({type: "Terminate"})); activeWs.close(); activeWs = null; }
+          if(processor) { processor.disconnect(); processor = null; }
+          if(audioCtx) { audioCtx.close(); audioCtx = null; }
+          if(mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; }
+          if(speechRecognition) { speechRecognition.stop(); speechRecognition = null; }
+          document.querySelectorAll('.dictate-btn, .smart-btn, .btn-voice-agent').forEach(b => { b.classList.remove('active'); b.classList.remove('recording'); });
+      }
+
+      async function startFieldVoice(inputId, mode) {
+          if(activeInputId === inputId && activeMode === mode) {
+              if(mode === 'smart') processSmartAI(inputId); 
+              else stopAudio();
+              return;
+          }
+          stopAudio();
+          
+          activeInputId = inputId; 
+          activeMode = mode;
+          const btn = document.getElementById(`btn-${mode}-${inputId}`);
+          btn.classList.add('active');
+
+          const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+          if (!SpeechRecognition) {
+              showToast("Browser does not support this feature. Use Google Chrome.");
+              stopAudio();
+              return;
+          }
+
+          speechRecognition = new SpeechRecognition();
+          speechRecognition.lang = 'en-US'; 
+          speechRecognition.continuous = true;
+          speechRecognition.interimResults = true;
+
+          const inputField = document.getElementById(inputId);
+          const originalText = inputField.value ? inputField.value + " " : "";
+          
+          if (mode === 'smart') btn.title = ""; 
+
+          speechRecognition.onstart = () => {
+              showToast(mode === 'dictate' ? "🎤 Live Dictation active (English First)... Speak now." : "🪄 Magic Wand is listening...");
+          };
+
+          speechRecognition.onresult = async (event) => {
+              let interimTranscript = '';
+              let finalTranscript = '';
+
+              for (let i = event.resultIndex; i < event.results.length; ++i) {
+                  if (event.results[i].isFinal) finalTranscript += event.results[i][0].transcript;
+                  else interimTranscript += event.results[i][0].transcript;
+              }
+
+              let currentText = finalTranscript + interimTranscript;
+
+              if (/[أ-ي]/.test(currentText)) {
+                  currentText = await translateAPI(currentText, 'ar', 'en');
+              }
+
+              if (mode === 'dictate') {
+                  inputField.value = originalText + currentText;
+                  inputField.dispatchEvent(new Event('input', {bubbles: true}));
+              } else if (mode === 'smart') {
+                  btn.title = currentText;
+              }
+          };
+
+          speechRecognition.onerror = (event) => { showToast("Listening ended."); stopAudio(); };
+          speechRecognition.onend = () => { document.querySelectorAll('.dictate-btn').forEach(b => { b.classList.remove('active'); }); };
+          speechRecognition.start();
+      }
+
+      async function processSmartAI(inputId) {
+          const btn = document.getElementById(`btn-smart-${inputId}`);
+          const rawSlang = btn.title;
+          stopAudio();
+          if(!rawSlang || rawSlang.trim() === '') return showToast("Not enough audio captured for magic wand.");
+          
+          showToast("AI Magic Formatting in progress...");
+          try {
+              const res = await fetch(`${SERVER_URL}/api/formulate`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({text: rawSlang}) });
+              const data = await res.json();
+              const suggBox = document.getElementById(`sugg-box-${inputId}`);
+              const suggText = document.getElementById(`sugg-text-${inputId}`);
+              
+              let finalRes = data.result;
+              if(!isArabic) {
+                  finalRes = await translateAPI(finalRes, 'ar', 'en');
+              }
+              
+              suggText.innerText = finalRes; suggBox.style.display = 'flex';
+          } catch(e) { showToast("Magic formatting failed."); }
+      }
+
+      function extractJSON(text) {
+          if (!text) return {};
+          if (typeof text === 'object') return text;
+          try {
+              const match = text.match(/\{[\s\S]*\}/);
+              if (match) return JSON.parse(match[0]);
+              return JSON.parse(text);
+          } catch(e) {
+              console.error("JSON Extraction Error:", e);
+              return {};
+          }
+      }
+
+      const cvAgentTool = {
+          type: "function", name: "submit_cv_data", description: "Submit the extracted CV data at the END of the interview.",
+          parameters: {
+              type: "object",
+              properties: {
+                  name: { type: "string" },
+                  jobTitles: { type: "array", items: { type: "string" } },
+                  contact: { type: "array", items: { type: "object", properties: { type: { type: "string" }, value: { type: "string" } } } },
+                  summary: { type: "string" },
+                  experience: { type: "array", items: { type: "object", properties: { jobTitle: { type: "string" }, company: { type: "string" }, date: { type: "string" } } } },
+                  education: { type: "array", items: { type: "object", properties: { degree: { type: "string" }, university: { type: "string" }, year: { type: "string" } } } },
+                  courses: { type: "array", items: { type: "object", properties: { courseName: { type: "string" }, organization: { type: "string" }, year: { type: "string" } } } },
+                  skills: { type: "array", items: { type: "string" } }
+              }, required: []
+          }
+      };
+
+      let nextPlayTime = 0;
+
+      async function toggleGlobalAgent() {
+          const btn = document.getElementById('global-agent-btn');
+          const txt = document.getElementById('global-agent-txt');
+          const status = document.getElementById('agent-status');
+          
+          if(activeMode === 'agent') { 
+              stopAudio(); 
+              status.style.display = 'none'; 
+              txt.innerHTML = 'Start Full Interview'; 
+              return; 
+          }
+          stopAudio();
+          
+          activeMode = 'agent';
+          btn.classList.add('recording');
+          txt.innerHTML = 'End Interview & Extract Data';
+          status.style.display = 'block'; 
+          status.innerText = "Initializing Agent...";
+          nextPlayTime = 0;
+          
+          try {
+              const res = await fetch(`${SERVER_URL}/api/token/agent`);
+              if (!res.ok) throw new Error("Local server is down.");
+              const data = await res.json();
+              if (!data.token) throw new Error("No token received.");
+              
+              mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+              audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
+              const source = audioCtx.createMediaStreamSource(mediaStream);
+              processor = audioCtx.createScriptProcessor(4096, 1, 1);
+              source.connect(processor); processor.connect(audioCtx.destination);
+              
+              activeWs = new WebSocket(`wss://agents.assemblyai.com/v1/ws?token=${data.token}`);
+              
+              activeWs.onopen = () => {
+                  status.innerText = "Speak now... Agent is listening.";
+                  activeWs.send(JSON.stringify({
+                      type: "session.update",
+                      session: { 
+                          system_prompt: "You are a professional HR recruiter. Speak ONLY in English. The user may answer in Arabic or English, you understand both perfectly. CRITICAL RULES: 1. NEVER interrupt the user. Wait patiently for long pauses. 2. Ask ONE short question at a time to collect: Name, Job Titles, Contact, Summary, Experience, Education, Courses, and Skills in English. 3. Call 'submit_cv_data' ONLY when you have gathered everything or the user says they are done.", 
+                          tools: [cvAgentTool] 
+                      }
+                  }));
+              };
+
+              processor.onaudioprocess = (e) => {
+                  if (activeWs && activeWs.readyState === WebSocket.OPEN) {
+                      const floatData = e.inputBuffer.getChannelData(0);
+                      const pcm16 = new Int16Array(floatData.length);
+                      for (let i = 0; i < floatData.length; i++) pcm16[i] = floatData[i] * 0x7FFF;
+                      activeWs.send(JSON.stringify({ type: "input.audio", audio: btoa(String.fromCharCode.apply(null, new Uint8Array(pcm16.buffer))) }));
+                  }
+              };
+
+              activeWs.onmessage = (event) => {
+                  const msg = JSON.parse(event.data);
+                  
+                  if (msg.type === "reply.audio" || msg.type === "agent_audio") {
+                      if (msg.data) playAgentAudio(msg.data);
+                      if (msg.audio) playAgentAudio(msg.audio);
+                  }
+
+                  if (msg.type === "tool.call" || msg.name === "submit_cv_data" || msg.type === "function_call" || msg.tool_calls) {
+                      status.innerText = "Data extracted! Spawning puzzle pieces...";
+                      let args = msg.arguments || msg.args || (msg.function_call && msg.function_call.arguments);
+                      if (!args && msg.tool_calls && msg.tool_calls.length > 0) {
+                          args = msg.tool_calls[0].function.arguments || msg.tool_calls[0].function.args;
+                      }
+
+                      const cvData = extractJSON(args);
+                      if (Object.keys(cvData).length > 0) {
+                          populateAgentData(cvData);
+                          showToast("Puzzle Data Assembled Successfully!");
+                          toggleGlobalAgent(); 
+                      }
+                  }
+              };
+              
+              activeWs.onerror = (err) => {
+                  showToast("Agent connection error.");
+                  stopAudio();
+              };
+
+          } catch(e) { 
+              showToast("Failed to connect to Agent"); 
+              stopAudio(); 
+              status.style.display = 'none';
+              txt.innerHTML = 'Start Full Interview';
+          }
+      }
+
+      async function playAgentAudio(base64Data) {
+          if (!audioCtx) return;
+          const binary = atob(base64Data);
+          const pcm = new Int16Array(binary.length / 2);
+          for (let i = 0; i < pcm.length; i++) {
+              pcm[i] = binary.charCodeAt(i * 2) | (binary.charCodeAt(i * 2 + 1) << 8);
+          }
+          const audioBuffer = audioCtx.createBuffer(1, pcm.length, 24000);
+          audioBuffer.getChannelData(0).set(Float32Array.from(pcm, x => x / 32768));
+          const source = audioCtx.createBufferSource();
+          source.buffer = audioBuffer;
+          source.connect(audioCtx.destination);
+          
+          if (nextPlayTime < audioCtx.currentTime) {
+              nextPlayTime = audioCtx.currentTime + 0.1;
+          }
+          source.start(nextPlayTime);
+          nextPlayTime += audioBuffer.duration;
+      }
+
+      async function populateAgentData(cvData) {
+          const processStr = async (str) => {
+              if(!str) return "";
+              if(!isArabic && /[أ-ي]/.test(str)) return await translateAPI(str, 'ar', 'en');
+              return str;
+          };
+
+          if(cvData.name) {
+              const nameInp = document.getElementById('main-name-input');
+              if(nameInp) { nameInp.value = await processStr(cvData.name); nameInp.dispatchEvent(new Event('input', {bubbles:true})); }
+          }
+          if(cvData.jobTitles && Array.isArray(cvData.jobTitles)) {
+              for (const title of cvData.jobTitles) {
+                  addEl('titles');
+                  const inp = document.getElementById(`inp-title-${counter}`);
+                  if(inp) { inp.value = await processStr(title); inp.dispatchEvent(new Event('input', {bubbles:true})); }
+              }
+          }
+          if(cvData.contact && Array.isArray(cvData.contact)) {
+              for (const c of cvData.contact) {
+                  addEl('contact');
+                  const lbl = document.getElementById(`inp-contact-lbl-${counter}`);
+                  const val = document.getElementById(`inp-contact-val-${counter}`);
+                  if(lbl && c.type) { lbl.value = await processStr(c.type); lbl.dispatchEvent(new Event('input', {bubbles:true})); }
+                  if(val && c.value) { val.value = await processStr(c.value); val.dispatchEvent(new Event('input', {bubbles:true})); }
+              }
+          }
+          if(cvData.summary) {
+              addEl('summary');
+              const inp = document.getElementById(`inp-summary-${counter}`);
+              if(inp) { inp.value = await processStr(cvData.summary); inp.dispatchEvent(new Event('input', {bubbles:true})); }
+          }
+          if(cvData.experience && Array.isArray(cvData.experience)) {
+              for (const exp of cvData.experience) {
+                  addEl('exp');
+                  const t = document.getElementById(`inp-exp-t-${counter}`);
+                  const c = document.getElementById(`inp-exp-c-${counter}`);
+                  const d = document.getElementById(`inp-exp-d-${counter}`);
+                  if(t && exp.jobTitle) { t.value = await processStr(exp.jobTitle); t.dispatchEvent(new Event('input', {bubbles:true})); }
+                  if(c && exp.company) { c.value = await processStr(exp.company); c.dispatchEvent(new Event('input', {bubbles:true})); }
+                  if(d && exp.date) { d.value = await processStr(exp.date); d.dispatchEvent(new Event('input', {bubbles:true})); }
+              }
+          }
+          if(cvData.education && Array.isArray(cvData.education)) {
+              for (const edu of cvData.education) {
+                  addEl('edu');
+                  const deg = document.getElementById(`inp-edu-deg-${counter}`);
+                  const uni = document.getElementById(`inp-edu-uni-${counter}`);
+                  const yr = document.getElementById(`inp-edu-yr-${counter}`);
+                  if(deg && edu.degree) { deg.value = await processStr(edu.degree); deg.dispatchEvent(new Event('input', {bubbles:true})); }
+                  if(uni && edu.university) { uni.value = await processStr(edu.university); uni.dispatchEvent(new Event('input', {bubbles:true})); }
+                  if(yr && edu.year) { yr.value = await processStr(edu.year); yr.dispatchEvent(new Event('input', {bubbles:true})); }
+              }
+          }
+          if(cvData.courses && Array.isArray(cvData.courses)) {
+              for (const crs of cvData.courses) {
+                  addEl('courses');
+                  const n = document.getElementById(`inp-crs-n-${counter}`);
+                  const o = document.getElementById(`inp-crs-o-${counter}`);
+                  const d = document.getElementById(`inp-crs-d-${counter}`);
+                  if(n && crs.courseName) { n.value = await processStr(crs.courseName); n.dispatchEvent(new Event('input', {bubbles:true})); }
+                  if(o && crs.organization) { o.value = await processStr(crs.organization); o.dispatchEvent(new Event('input', {bubbles:true})); }
+                  if(d && crs.year) { d.value = await processStr(crs.year); d.dispatchEvent(new Event('input', {bubbles:true})); }
+              }
+          }
+          if(cvData.skills && Array.isArray(cvData.skills)) {
+              for (const sk of cvData.skills) {
+                  addEl('skills');
+                  const inp = document.getElementById(`inp-skills-${counter}`);
+                  if(inp) { inp.value = await processStr(sk); inp.dispatchEvent(new Event('input', {bubbles:true})); }
+              }
+          }
+      }
+
+      let autoSaveTimeout;
+      function triggerAutoSave() {
+          clearTimeout(autoSaveTimeout);
+          autoSaveTimeout = setTimeout(() => {
+              saveCurrentProfileState();
+              localStorage.setItem('cvox_profiles', JSON.stringify(profilesData));
+              localStorage.setItem('cvox_active', activeProfile);
+          }, 1000); 
+      }
+
+      function initDefaultState(forceNew = false) {
+          document.getElementById('name-field-container').innerHTML = wrapWithVoice('main-name-input', `<input type="text" id="main-name-input" class="translatable-input" placeholder="Full Name" oninput="updateTxt('cv-name', this.value)" value="John Doe">`);
+          if(!forceNew) {
+              addEl('titles'); addEl('contact'); addEl('summary'); addEl('portfolio'); 
+          }
+          attachDragEvents();
+          saveCurrentProfileState(); 
+          if(!forceNew) showToast('Environment loaded successfully!');
+      }
+
+      window.onload = () => { 
+          document.addEventListener("DOMContentLoaded", () => {
+              blankInputsHTML = document.getElementById('data-inputs-area').innerHTML;
+              blankPaperHTML = document.getElementById('cv-paper').innerHTML;
+          });
+
+          const savedProfiles = localStorage.getItem('cvox_profiles');
+          const savedActive = localStorage.getItem('cvox_active');
+
+          if (savedProfiles && savedActive) {
+              try {
+                  profilesData = JSON.parse(savedProfiles);
+                  const select = document.getElementById('profile-select');
+                  select.innerHTML = '';
+                  for(let key in profilesData) {
+                      const opt = document.createElement('option'); opt.text = key; opt.value = key;
+                      select.add(opt);
+                  }
+                  select.value = savedActive; activeProfile = savedActive;
+                  document.getElementById('data-inputs-area').innerHTML = profilesData[savedActive].inputs;
+                  document.getElementById('cv-paper').innerHTML = profilesData[savedActive].paper;
+                  counter = profilesData[savedActive].count;
+                  attachDragEvents();
+                  showToast('Restored last autosave 🔄');
+              } catch(e) { initDefaultState(); }
+          } else { initDefaultState(); }
+
+          document.addEventListener('input', triggerAutoSave);
+          document.addEventListener('change', triggerAutoSave);
+          document.addEventListener('dragend', triggerAutoSave); 
+          document.addEventListener('click', (e) => { if(e.target.tagName === 'BUTTON' || e.target.type === 'checkbox') triggerAutoSave(); });
+      };
+
+  </script>
+</body>
+</html>
